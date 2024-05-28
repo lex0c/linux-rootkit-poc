@@ -1,5 +1,5 @@
 #include <string.h>
-#include "xor.h"
+#include <stdlib.h>
 
 void xor(char *x_str) {
     int i, key=0xFE;
@@ -7,5 +7,10 @@ void xor(char *x_str) {
     for (i = 0; i < strlen(x_str); i++) {
         x_str[i] ^= key;
     }
+}
+
+void cleanup(void *var, int len) {
+    memset(var, 0x00, len);
+    free(var);
 }
 

