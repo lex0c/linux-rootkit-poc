@@ -62,8 +62,9 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_LXSTAT 10
 #define SYS_MKDIR 11
 #define SYS_MKDIRAT 12
+#define SYS_PCAP_LOOP 13
 
-#define SYSCALL_SIZE 13
+#define SYSCALL_SIZE 14
 
 static char *syscall_table[SYSCALL_SIZE] = {{
 '''
@@ -81,7 +82,8 @@ syscalls = [
     "stat",
     "lstat",
     "mkdir",
-    "mkdirat"
+    "mkdirat",
+    "pcap_loop"
 ]
 
 header = header_template.format(

