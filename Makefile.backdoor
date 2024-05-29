@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -g
+LDFLAGS = -lc -ldl -lutil -lpthread
 TARGET = shellserver
 SERVICE_FILE = $(TARGET).service
 BIN_DIR = /bin
@@ -10,7 +11,7 @@ OBJS = $(SRCS:.c=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

