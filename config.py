@@ -70,12 +70,15 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_LINK 6
 #define SYS_UNLINK 7
 #define SYS_UNLINKAT 8
-#define SYS_XSTAT 9
-#define SYS_LXSTAT 10
-#define SYS_PCAP_LOOP 11
-#define SYS_EXECVE 12
+#define SYS_RENAME 9
+#define SYS_MKDIR 10
+#define SYS_MKDIRAT 11
+#define SYS_XSTAT 12
+#define SYS_LXSTAT 13
+#define SYS_PCAP_LOOP 14
+#define SYS_EXECVE 15
 
-#define SYSCALL_SIZE 13
+#define SYSCALL_SIZE 16
 
 static char *syscall_table[SYSCALL_SIZE] = {{
 '''
@@ -90,6 +93,9 @@ syscalls = [
     "link",
     "unlink",
     "unlinkat",
+    "rename",
+    "mkdir",
+    "mkdirat",
     "stat",
     "lstat",
     "pcap_loop",
