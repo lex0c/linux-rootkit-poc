@@ -1,9 +1,6 @@
 # Linux Rootkit POC
 
-The poc works in two stages:
-
-- **1**: Adds a shared lib to the ld preload. This lib contains hooks to hide the backdoor.
-- **2**: Install the backdoor on the systemd. The backdoor listens to connections on a specific password-protected port.
+This rootkit runs in userland and manipulates system calls and critical functions to hide its presence and provide backdoors for unauthorized access.
 
 **Why**? For fun...
 
