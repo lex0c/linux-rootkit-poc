@@ -60,6 +60,24 @@ sudo -u <USER> -s
 
 - `sudo last`
 
+## Bypass rootkit "process sandbox"
+
+Move and rename bins.
+
+**unhide**
+```sh
+sudo cp /usr/bin/unhide uhd
+
+sudo ./uhd proc
+```
+
+**rkhunter**
+```sh
+sudo cp /usr/bin/rkhunter rkh
+
+sudo ./rkh --check
+```
+
 ## Block remote backdoor
 
 - `sudo iptables -A INPUT -p tcp --dport <PORT> -j DROP`
