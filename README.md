@@ -15,13 +15,13 @@ This poc is based on: [azazel](https://github.com/chokepoint/azazel)
 - Hides processes, files, directories and network connections
 - Open remote terminal (plaintext) with password
 - Add PAM backdoor for local root access
-- Avoids unhide and local sniffing
+- Avoids unhide, rkhunter and local sniffing
 - Exit on debug
 
 ## Access remote backdoor
 
 ```sh
-nc <BACKDOOR-IP> <BACKDOOR-PORT>
+nc <IP> <PORT>
 ```
 *enter the password!*
 
@@ -37,17 +37,21 @@ sudo -u <USER> -s
 
 - `sudo nmap -sV -p- -v <IP> --reason`
 
-- `sudo tcpdump <PROTOCOL> port <BACKDOOR-PORT> -A`
+- `sudo tcpdump <PROTOCOL> port <PORT> -A`
 
 - `sudo lsof -u <USER>`
-- `sudo lsof -i :<BACKDOOR-PORT>`
+- `sudo lsof -i :<PORT>`
 - `sudo lsof -i <PROTOCOL>`
-- `sudo lsof -p <BACKDOOR-PID>`
+- `sudo lsof -p <PID>`
 
 - `sudo unhide proc`
 - `sudo unhide sys`
 
+- `sudo rkhunter --update && sudo rkhunter --check`
+
 - `sudo ps aux | grep shellserver`
+
+- `sudo strace -p <PID>`
 
 - `sudo cat /proc/net/tcp`
 - `sudo cat /proc/net/tc6`
@@ -58,7 +62,7 @@ sudo -u <USER> -s
 
 ## Block remote backdoor
 
-- `sudo iptables -A INPUT -p tcp --dport <BACKDOOR-PORT> -j DROP`
+- `sudo iptables -A INPUT -p tcp --dport <PORT> -j DROP`
 
 ## Unblock remote backdoor
 

