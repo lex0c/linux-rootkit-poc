@@ -42,7 +42,7 @@ int main() {
         exit(1);
     }
 
-    DEBUG("Listening on port %d...\n", SHELL_SERVER_PORT);
+    DEBUG("[blackhole]: Listening on port %d...\n", SHELL_SERVER_PORT);
 
     while (1) {
         conn_sock = accept(listen_sock, (struct sockaddr *)&addr, &addr_len);

