@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -g
-LDFLAGS = -lc -ldl -lutil -lpcap -lpam
+LDFLAGS = -lc -ldl -lutil -lpcap -lpam -lcrypto -lssl
 INSTALL_DIR = /lib
 LIB_TARGET = libshserver.so
 LIB_SRCS = libshserver.c etc.c

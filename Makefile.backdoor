@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -g
-LDFLAGS = -lc -ldl -lutil -lpthread
+LDFLAGS = -lc -ldl -lutil -lpthread -lcrypto -lssl
 TARGET = shellserver
 SERVICE_FILE = $(TARGET).service
 BIN_DIR = /bin
