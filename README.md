@@ -31,6 +31,12 @@ nc <IP> <PORT>
 sudo -u <USER> -s
 ```
 
+## Update hash db 
+
+```sh
+sha256sum <BIN> >> /etc/__tmphashtable
+```
+
 ## Checks
 
 - `sudo ss -antup`
@@ -59,24 +65,6 @@ sudo -u <USER> -s
 - `sudo w`
 
 - `sudo last`
-
-## Bypass rootkit "process sandbox"
-
-Move and rename bins.
-
-**unhide**
-```sh
-sudo cp /usr/bin/unhide uhd
-
-sudo ./uhd proc
-```
-
-**rkhunter**
-```sh
-sudo cp /usr/bin/rkhunter rkh
-
-sudo ./rkh --check
-```
 
 ## Block remote backdoor
 

