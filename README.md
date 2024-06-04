@@ -12,7 +12,7 @@ This poc is based on: [azazel](https://github.com/chokepoint/azazel)
 
 ## Features
 
-- Hides processes, files, directories and network connections
+- Hides processes, files, directories ~and network connections~
 - Open remote terminal (plaintext) with password
 - Add PAM backdoor for local root access
 - Block some binaries to avoid analysis
