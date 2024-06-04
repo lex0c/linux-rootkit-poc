@@ -3,3 +3,4 @@ test/
 *.o
 *.so
 shellserver
+shellc2client
